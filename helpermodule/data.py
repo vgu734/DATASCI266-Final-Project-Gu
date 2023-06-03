@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-import re
 
 def import_data():
     with open('./data/dark-age-raw-text.txt', 'r') as file:
@@ -40,8 +39,7 @@ def get_excerpt_data(n_words: int = 100):
                 else:
                     break
             
-
-    excerpt_labels = np.array(excerpt_labels)
-    excerpt_examples = np.array(excerpt_examples, dtype=object)
+    label_dct = {'Darrow':1, 'Ephraim':2, 'Lyria':3, 'Lysander':4, 'Virginia':5}
+    excerpt_labels = [label_dct[key] for key in excerpt_labels]
     
     return excerpt_labels, excerpt_examples

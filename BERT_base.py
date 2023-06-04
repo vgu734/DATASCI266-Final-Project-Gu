@@ -23,23 +23,25 @@ from transformers import BertTokenizer, TFBertModel
 from transformers import logging
 logging.set_verbosity_error()
 
-bert_tokenizer = BertTokenizer.from_pretrained('bert-base-cased')
-bert_model = TFBertModel.from_pretrained('bert-base-cased')
+bert_tokenizer = BertTokenizer.from_pretrained('distilbert-base-cased')
+#bert_tokenizer = BertTokenizer.from_pretrained('bert-base-cased')
+bert_model = TFBertModel.from_pretrained('distilbert-base-cased')
+#bert_model = TFBertModel.from_pretrained('bert-base-cased')
 
 MAX_SEQUENCE_LENGTH = 128                 # set max_length of the input sequence
 
-def format_data():
-    print("formatting data")
-    excerpt_labels, excerpt_examples = get_excerpt_data(n_words=100)
+def format_data(n: int=100):
+    excerpt_labels, excerpt_examples = get_excerpt_data(n_words=n)
     x_train, x_test, y_train, y_test = train_test_split(excerpt_examples, excerpt_labels, test_size=.2, random_state=2457)
     
+    print("Number in x_train: ",len(x_train))
+    num_train_examples = len(x_train)      # set number of train examples
+    num_test_examples = len(y_train)       # set number of test examples
+
     x_train = tf.convert_to_tensor(x_train)
     x_test = tf.convert_to_tensor(x_test)
     y_train = tf.convert_to_tensor(y_train)
     y_test = tf.convert_to_tensor(y_test)
-    
-    num_train_examples = 2000      # set number of train examples
-    num_test_examples = 500       # set number of test examples
 
     all_train_examples = [x.decode('utf-8') for x in x_train.numpy()]
     all_test_examples = [x.decode('utf-8') for x in x_test.numpy()]
@@ -123,22 +125,23 @@ def create_bert_classification_model(bert_model,
     return classification_model
 
 def main(batch_size: int=1, num_epoch: int=2):
-    x_train, x_test, y_train, y_test = format_data()
+    x_train, x_test, y_train, y_test = format_data(n=256)
     bert_classification_model = create_bert_classification_model(bert_model, num_train_layers=12)
     #confirm all layers are frozen
     bert_classification_model.summary()
-    
-    bert_classification_model_history = bert_classification_model.fit(
-        [x_train.input_ids, x_train.token_type_ids, x_train.attention_mask],
-        y_train,
-        validation_data=([x_test.input_ids, x_test.token_type_ids, x_test.attention_mask], y_test),
-        batch_size=batch_size,
-        epochs=2
-    ) 
+
+    with tf.device("/GPU:0"):
+        bert_classification_model_history = bert_classification_model.fit(
+            [x_train.input_ids, x_train.token_type_ids, x_train.attention_mask],
+            y_train,
+            validation_data=([x_test.input_ids, x_test.token_type_ids, x_test.attention_mask], y_test),
+            batch_size=batch_size,
+            epochs=num_epoch
+        )
     
     
 if __name__ == "__main__":
-    print("in main")
-    main()
+    print(f"Batch size: {sys.argv[1]}")
+    main(batch_size=int(list({sys.argv[1]})[0]))
     print("all done")
     

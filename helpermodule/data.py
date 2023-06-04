@@ -39,7 +39,7 @@ def get_excerpt_data(n_words: int = 100):
                 else:
                     break
             
-    label_dct = {'Darrow':1, 'Ephraim':2, 'Lyria':3, 'Lysander':4, 'Virginia':5}
-    excerpt_labels = [label_dct[key] for key in excerpt_labels]
+    #label_dct = {'Darrow':1, 'Ephraim':2, 'Lyria':3, 'Lysander':4, 'Virginia':5}
+    #excerpt_labels = [label_dct[key] for key in excerpt_labels]
     
     return excerpt_labels, excerpt_examples

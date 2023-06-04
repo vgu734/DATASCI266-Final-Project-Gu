@@ -1,32 +1,30 @@
 import sys
 sys.path.append('helpermodule')
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 from helpermodule import data
 from data import get_chapter_data, get_excerpt_data
+from sklearn import preprocessing
 from sklearn.model_selection import train_test_split
 
 import numpy as np
 import tensorflow as tf
+tf.get_logger().setLevel('ERROR')
 from tensorflow import keras
 from tensorflow.keras.layers import Embedding, Input, Dense, Lambda
 from tensorflow.keras.models import Model
-import tensorflow.keras.backend as K
-
+from keras.utils import to_categorical
 import sklearn as sk
-import os
-import nltk
-from nltk.data import find
-import matplotlib.pyplot as plt
-import re
 
 from transformers import BertTokenizer, TFBertModel
 from transformers import logging
 logging.set_verbosity_error()
 
-bert_tokenizer = BertTokenizer.from_pretrained('distilbert-base-cased')
-#bert_tokenizer = BertTokenizer.from_pretrained('bert-base-cased')
-bert_model = TFBertModel.from_pretrained('distilbert-base-cased')
-#bert_model = TFBertModel.from_pretrained('bert-base-cased')
+#bert_tokenizer = BertTokenizer.from_pretrained('distilbert-base-cased')
+bert_tokenizer = BertTokenizer.from_pretrained('bert-base-cased')
+#bert_model = TFBertModel.from_pretrained('distilbert-base-cased')
+bert_model = TFBertModel.from_pretrained('bert-base-cased')
 
 MAX_SEQUENCE_LENGTH = 128                 # set max_length of the input sequence
 
@@ -34,9 +32,14 @@ def format_data(n: int=100):
     excerpt_labels, excerpt_examples = get_excerpt_data(n_words=n)
     x_train, x_test, y_train, y_test = train_test_split(excerpt_examples, excerpt_labels, test_size=.2, random_state=2457)
     
-    print("Number in x_train: ",len(x_train))
     num_train_examples = len(x_train)      # set number of train examples
     num_test_examples = len(y_train)       # set number of test examples
+    
+    label = preprocessing.LabelEncoder()
+    y_train = label.fit_transform(y_train)
+    y_train = to_categorical(y_train)
+    y_test = label.fit_transform(y_test)
+    y_test = to_categorical(y_test)
 
     x_train = tf.convert_to_tensor(x_train)
     x_test = tf.convert_to_tensor(x_test)
@@ -105,30 +108,29 @@ def create_bert_classification_model(bert_model,
 
     bert_out = bert_model(bert_inputs)
 
-    pooler_token = bert_out[1]
-    #cls_token = bert_out[0][:, 0, :]
+    cls_token = bert_out[0][:, 0, :]
 
-    hidden = tf.keras.layers.Dense(hidden_size, activation='relu', name='hidden_layer')(pooler_token)
+    hidden_1 = tf.keras.layers.Dense(hidden_size, activation='relu', name='hidden_1')(cls_token)
+    hidden_1 = tf.keras.layers.Dropout(dropout)(hidden_1)
+    hidden_2 = tf.keras.layers.Dense(64, activation='relu', name='hidden_2')(hidden_1)
+    hidden_2 = tf.keras.layers.Dropout(dropout)(hidden_2)
+    hidden_3 = tf.keras.layers.Dense(32, activation='relu', name='hidden_3')(hidden_2)
+    hidden_3 = tf.keras.layers.Dropout(dropout)(hidden_3)
 
 
-    hidden = tf.keras.layers.Dropout(dropout)(hidden)  
-
-
-    classification = tf.keras.layers.Dense(1, activation='sigmoid',name='classification_layer')(hidden)
+    classification = tf.keras.layers.Dense(5, activation='softmax')(hidden_3)
     
     classification_model = tf.keras.Model(inputs=[input_ids, token_type_ids, attention_mask], outputs=[classification])
     
     classification_model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=learning_rate),
-                                 loss=tf.keras.losses.BinaryCrossentropy(from_logits=False), 
+                                 loss='categorical_crossentropy', 
                                  metrics='accuracy')
     
     return classification_model
 
-def main(batch_size: int=1, num_epoch: int=2):
-    x_train, x_test, y_train, y_test = format_data(n=256)
+def main(batch_size: int=1, n: int=100, num_epoch: int=10):
+    x_train, x_test, y_train, y_test = format_data(n=n)
     bert_classification_model = create_bert_classification_model(bert_model, num_train_layers=12)
-    #confirm all layers are frozen
-    bert_classification_model.summary()
 
     with tf.device("/GPU:0"):
         bert_classification_model_history = bert_classification_model.fit(
@@ -141,7 +143,5 @@ def main(batch_size: int=1, num_epoch: int=2):
     
     
 if __name__ == "__main__":
-    print(f"Batch size: {sys.argv[1]}")
-    main(batch_size=int(list({sys.argv[1]})[0]))
-    print("all done")
-    
+    print(f"Batch size: {sys.argv[1]} Excerpt Length: {sys.argv[2]}")
+    main(batch_size=int(list({sys.argv[1]})[0]), n=int(list({sys.argv[2]})[0]))    

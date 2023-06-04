@@ -4,7 +4,7 @@ import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 from helpermodule import data
-from data import get_chapter_data, get_excerpt_data
+from data import get_chapter_data, get_excerpt_data, format_data
 from sklearn import preprocessing
 from sklearn.model_selection import train_test_split
 
@@ -18,52 +18,8 @@ from keras.utils import to_categorical
 import sklearn as sk
 
 from transformers import BertTokenizer, TFBertModel
-from transformers import logging
-logging.set_verbosity_error()
-
-#bert_tokenizer = BertTokenizer.from_pretrained('distilbert-base-cased')
 bert_tokenizer = BertTokenizer.from_pretrained('bert-base-cased')
-#bert_model = TFBertModel.from_pretrained('distilbert-base-cased')
 bert_model = TFBertModel.from_pretrained('bert-base-cased')
-
-MAX_SEQUENCE_LENGTH = 128                 # set max_length of the input sequence
-
-def format_data(n: int=100):
-    excerpt_labels, excerpt_examples = get_excerpt_data(n_words=n)
-    x_train, x_test, y_train, y_test = train_test_split(excerpt_examples, excerpt_labels, test_size=.2, random_state=2457)
-    
-    num_train_examples = len(x_train)      # set number of train examples
-    num_test_examples = len(y_train)       # set number of test examples
-    
-    label = preprocessing.LabelEncoder()
-    y_train = label.fit_transform(y_train)
-    y_train = to_categorical(y_train)
-    y_test = label.fit_transform(y_test)
-    y_test = to_categorical(y_test)
-
-    x_train = tf.convert_to_tensor(x_train)
-    x_test = tf.convert_to_tensor(x_test)
-    y_train = tf.convert_to_tensor(y_train)
-    y_test = tf.convert_to_tensor(y_test)
-
-    all_train_examples = [x.decode('utf-8') for x in x_train.numpy()]
-    all_test_examples = [x.decode('utf-8') for x in x_test.numpy()]
-    
-    x_train = bert_tokenizer(all_train_examples[:num_train_examples],
-                  max_length=MAX_SEQUENCE_LENGTH,
-                  truncation=True,
-                  padding='max_length', 
-                  return_tensors='tf')
-    y_train = y_train[:num_train_examples]
-
-    x_test = bert_tokenizer(all_test_examples[:num_test_examples],
-                  max_length=MAX_SEQUENCE_LENGTH,
-                  truncation=True,
-                  padding='max_length', 
-                  return_tensors='tf')
-    y_test = y_test[:num_test_examples]
-    
-    return x_train, x_test, y_train, y_test
 
 def create_bert_classification_model(bert_model,
                                      num_train_layers=0,
@@ -73,6 +29,8 @@ def create_bert_classification_model(bert_model,
     """
     Build a simple classification model with BERT. Use the Pooler Output for classification purposes
     """
+    MAX_SEQUENCE_LENGTH = 128
+    
     if num_train_layers == 0:
         # Freeze all layers of pre-trained BERT model
         bert_model.trainable = False
@@ -128,7 +86,7 @@ def create_bert_classification_model(bert_model,
     
     return classification_model
 
-def main(batch_size: int=1, n: int=100, num_epoch: int=10):
+def main(batch_size: int=1, n: int=100, num_epoch: int=1):
     x_train, x_test, y_train, y_test = format_data(n=n)
     bert_classification_model = create_bert_classification_model(bert_model, num_train_layers=12)
 
@@ -141,6 +99,7 @@ def main(batch_size: int=1, n: int=100, num_epoch: int=10):
             epochs=num_epoch
         )
     
+    bert_classification_model.save(f'models/bert_classification_model_{batch_size}_{n}.h5')
     
 if __name__ == "__main__":
     print(f"Batch size: {sys.argv[1]} Excerpt Length: {sys.argv[2]}")

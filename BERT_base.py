@@ -86,10 +86,11 @@ def create_bert_classification_model(bert_model,
     
     return classification_model
 
-def main(batch_size: int=1, n: int=100, num_epoch: int=1):
+def main(batch_size: int=1, n: int=100, num_epoch: int=10):
     x_train, x_test, y_train, y_test = format_data(n=n)
     bert_classification_model = create_bert_classification_model(bert_model, num_train_layers=12)
 
+    print(f"Batch size: {batch_size} Excerpt Length: {n}")
     with tf.device("/GPU:0"):
         bert_classification_model_history = bert_classification_model.fit(
             [x_train.input_ids, x_train.token_type_ids, x_train.attention_mask],
@@ -102,5 +103,4 @@ def main(batch_size: int=1, n: int=100, num_epoch: int=1):
     bert_classification_model.save(f'models/bert_classification_model_{batch_size}_{n}.h5')
     
 if __name__ == "__main__":
-    print(f"Batch size: {sys.argv[1]} Excerpt Length: {sys.argv[2]}")
     main(batch_size=int(list({sys.argv[1]})[0]), n=int(list({sys.argv[2]})[0]))    

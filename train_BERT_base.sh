@@ -1,10 +1,8 @@
 #!/bin/bash
-python BERT_base.py 8 100 &&
-python BERT_base.py 16 100 &&
-python BERT_base.py 32 100 &&
-python BERT_base.py 64 100
+python BERT_base.py 4 64 &&
+python BERT_base.py 8 64 &&
+python BERT_base.py 16 64 &&
 
-python BERT_base.py 8 256 &&
-python BERT_base.py 16 256 &&
-python BERT_base.py 32 256 &&
-python BERT_base.py 64 256
+python BERT_base.py 4 128 &&
+python BERT_base.py 8 128 &&
+python BERT_base.py 16 128

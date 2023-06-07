@@ -86,11 +86,11 @@ def create_bert_classification_model(bert_model,
     
     return classification_model
 
-def main(batch_size: int=1, n: int=100, num_epoch: int=10):
+def main(batch_size: int=1, n: int=100, num_train_layers: int=12, num_epoch: int=10):
     x_train, x_test, y_train, y_test = format_data(n=n)
-    bert_classification_model = create_bert_classification_model(bert_model, num_train_layers=12)
+    bert_classification_model = create_bert_classification_model(bert_model, num_train_layers=num_train_layers)
 
-    print(f"Batch size: {batch_size} Excerpt Length: {n}")
+    print(f"Batch size: {batch_size} Excerpt Length: {n} Layers Retrained: {num_train_layers}")
     with tf.device("/GPU:0"):
         bert_classification_model_history = bert_classification_model.fit(
             [x_train.input_ids, x_train.token_type_ids, x_train.attention_mask],
@@ -100,7 +100,7 @@ def main(batch_size: int=1, n: int=100, num_epoch: int=10):
             epochs=num_epoch
         )
     
-    bert_classification_model.save(f'models/bert_classification_model_{batch_size}_{n}.h5')
+    bert_classification_model.save(f'models/bert_classification_model_{batch_size}_{n}_{num_train_layers}.h5')
     
 if __name__ == "__main__":
-    main(batch_size=int(list({sys.argv[1]})[0]), n=int(list({sys.argv[2]})[0]))    
+    main(batch_size=int(list({sys.argv[1]})[0]), n=int(list({sys.argv[2]})[0]), num_train_layers=int(list({sys.argv[3]})[0]))

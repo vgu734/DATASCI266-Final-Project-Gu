@@ -16,3 +16,9 @@ The language task involves classifying an excerpt of the text based on which nar
 from. I then looked to improve model performance by fine-tuning. Finally, I analyzed various out-of-context words 
 specific to the world Pierce Brown created to determine if the fine-tuned BERT could pick up nuanced word meanings,
 as represented in word embeddings, based on narrator.
+
+References:
+https://drive.google.com/drive/u/1/folders/14x3YKhhHAuhnzXxN8Os1JhcEwuGe9IAt
+http://star.informatik.rwth-aachen.de/Publications/CEUR-WS/Vol-2989/long_paper43.pdf
+https://pubs.aip.org/aip/acp/article-abstract/2605/1/020007/2876057/Exploring-cross-genre-performance-for-age-based?redirectedFrom=fulltext
+https://arxiv.org/abs/2010.07245
